@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  accounts  EmailAccount[]
+
+  @@map("users")
+}
+
+model EmailAccount {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  provider       String   // 'gmail' | 'outlook'
+  providerEmail  String   @map("provider_email")
+  accessToken    String   @map("access_token")
+  refreshToken   String   @map("refresh_token")
+  tokenExpiry    DateTime @map("token_expiry")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails Email[]
+
+  @@map("email_accounts")
+}
+
+model Email {
+  id                String   @id @default(uuid())
+  accountId         String   @map("account_id")
+  providerMessageId String   @map("provider_message_id")
+  subject           String
+  sender            String
+  senderEmail       String   @map("sender_email")
+  bodyPreview       String   @map("body_preview")
+  bodyHtml          String?  @map("body_html")
+  bodyText          String?  @map("body_text")
+  receivedAt        DateTime @map("received_at")
+  isRead            Boolean  @default(false) @map("is_read")
+  isArchived        Boolean  @default(false) @map("is_archived")
+  isDeleted         Boolean  @default(false) @map("is_deleted")
+  labels            String   @default("[]")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  account EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, providerMessageId])
+  @@map("emails")
+}
